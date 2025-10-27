@@ -1,22 +1,110 @@
-[workspace]
-members = ["bevy_rapier2d", "bevy_rapier3d", "bevy_rapier_benches3d", "ci"]
-resolver = "2"
+[package]
+name = "bevy_rapier3d"
+version = "0.31.0"
+authors = ["Sébastien Crozet <developer@crozet.re>"]
+description = "3-dimensional physics engine in Rust, official Bevy plugin."
+documentation = "http://docs.rs/bevy_rapier3d"
+homepage = "http://rapier.rs"
+repository = "https://github.com/dimforge/bevy_rapier"
+readme = "../README.md"
+keywords = ["physics", "dynamics", "rigid", "real-time", "joints"]
+license = "Apache-2.0"
+edition = "2021"
 
-[profile.dev]
-# Use slightly better optimization by default, as examples otherwise seem laggy.
-opt-level = 1
 
-[profile.release]
-codegen-units = 1
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "src/lib.rs"
+required-features = ["dim3"]
 
-[patch.crates-io]
-#nalgebra = { path = "../nalgebra" }
-#parry2d = { path = "../parry/crates/parry2d" }
-#parry3d = { path = "../parry/crates/parry3d" }
-#rapier2d = { path = "../rapier/crates/rapier2d" }
-#rapier3d = { path = "../rapier/crates/rapier3d" }
-#nalgebra = { git = "https://github.com/dimforge/nalgebra", branch = "dev" }
-#parry2d = { git = "https://github.com/dimforge/parry", branch = "master" }
-#parry3d = { git = "https://github.com/dimforge/parry", branch = "master" }
-#rapier2d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
-#rapier3d = { git = "https://github.com/dimforge/rapier", branch = "character-controller" }
+[lints]
+rust.unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(feature, values("dim2"))',
+] }
+clippy = { needless_lifetimes = "allow" }
+
+[features]
+default = [
+    "dim3",
+    "async-collider",
+    "debug-render-3d",
+    "picking-backend",
+    "to-bevy-mesh",
+]
+dim3 = []
+debug-render = ["debug-render-3d"]
+debug-render-2d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_sprite",
+    "bevy/bevy_gizmos",
+    "rapier3d/debug-render",
+    "bevy/bevy_asset",
+]
+debug-render-3d = [
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_pbr",
+    "bevy/bevy_gizmos",
+    "rapier3d/debug-render",
+    "bevy/bevy_asset",
+]
+rapier-debug-render = ["rapier3d/debug-render"]
+
+parallel = ["rapier3d/parallel"]
+simd-stable = ["rapier3d/simd-stable"]
+simd-nightly = ["rapier3d/simd-nightly"]
+serde-serialize = ["rapier3d/serde-serialize", "bevy/serialize", "serde"]
+enhanced-determinism = ["rapier3d/enhanced-determinism"]
+headless = []
+picking-backend = ["bevy/bevy_picking", "bevy/bevy_render"]
+async-collider = [
+    "bevy/bevy_asset",
+    "bevy/bevy_scene",
+    "bevy/bevy_render",
+    "bevy/bevy_image",
+]
+to-bevy-mesh = ["bevy/bevy_render", "bevy/bevy_asset"]
+
+[dependencies]
+bevy = { version = "0.17.0", default-features = false, features = ["std"] }
+nalgebra = { version = "0.34.1", features = ["convert-glam030"] }
+rapier3d = "0.29.0"
+bitflags = "2.4"
+log = "0.4"
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+bevy = { version = "0.17.0", default-features = false, features = [
+    "bevy_window",
+    "x11",
+    "tonemapping_luts",
+    "bevy_state",
+    "bevy_debug_stepping",
+    "bevy_text",
+    "bevy_ui",
+    "default_font",
+    "bevy_log",
+] }
+approx = "0.5.1"
+glam = { version = "0.30.7", features = ["approx"] }
+bevy-inspector-egui = "0.34"
+bevy_egui = "0.37.0"
+bevy_mod_debugdump = "0.14.0"
+
+[package.metadata.docs.rs]
+# Enable all the features when building the docs on docs.rs
+features = ["debug-render-3d", "serde-serialize", "async-collider"]
+
+[package.metadata.cargo-all-features]
+
+denylist = ["simd-nightly"]
+
+# Features "dim2" and "dim3" are incompatible, so skip permutations including them
+skip_feature_sets = [["enhanced-determinism", "simd-stable"]]
+
+always_include_features = ["dim3"]
+
+# The maximum number of features to try at once. Does not count features from `always_include_features`.
+# This is useful for reducing the number of combinations run for a crate with a large amount of features,
+# since in most cases a bug just needs a small set of 2-3 features to reproduce.
+
+max_combination_size = 1
